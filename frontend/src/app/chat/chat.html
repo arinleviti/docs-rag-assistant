@@ -1,0 +1,78 @@
+<div class="chat-header">
+  <div class="header-left">
+    <img
+      src="https://res.cloudinary.com/dvr9t29vj/image/upload/v1756298027/arin-bot_1_o6lndq.webp"
+      alt="Bot"
+      class="header-avatar"
+    />
+    <div class="header-info">
+      <span class="header-name">Arin's Assistant</span>
+      <span class="header-status">AI-powered · Ask me anything</span>
+    </div>
+  </div>
+</div>
+
+<div class="chat-container">
+  <div class="messages-wrapper" #messagesWrapper>
+    <div class="messages">
+      @for (msg of messages; track msg) {
+        @if (msg.from === 'user') {
+          <div class="message-wrapper user-wrapper">
+            <div class="message user">
+              <span>{{ msg.text }}</span>
+            </div>
+          </div>
+        }
+
+        @if (msg.from === 'bot') {
+          <div class="message-wrapper bot-wrapper">
+            <img [src]="botImageUrl" alt="Bot" class="avatar" />
+            <div class="message bot">
+              <!-- show text if available -->
+              @if (msg.text) {
+                <span [innerHTML]="msg.text"></span>
+              }
+
+              <!-- show buttons if available -->
+              @if (msg.buttons) {
+                <div class="bot-buttons">
+                  @for (btn of msg.buttons; track btn) {
+                    <button (click)="sendMessageFromButton(btn)">{{ btn.label }}</button>
+                  }
+                </div>
+              }
+            </div>
+          </div>
+        }
+      }
+
+      @if (chatService.isTyping) {
+        <div class="message-wrapper bot-wrapper">
+          <img [src]="botImageUrl" alt="Bot" class="avatar" />
+          <div class="message bot typing-indicator">
+            @if (!chatService.isColdStart) {
+              <span class="dot"></span>
+              <span class="dot"></span>
+              <span class="dot"></span>
+            } @else {
+              <span class="cold-start-text"
+                >Waking up the server, this can take a few seconds…</span
+              >
+            }
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+
+  <!-- Input area -->
+  <div class="input-area">
+    <input
+      type="text"
+      [(ngModel)]="userInput"
+      (keyup.enter)="sendMessage()"
+      placeholder="Type a message..."
+    />
+    <button (click)="sendMessage()">Send</button>
+  </div>
+</div>
