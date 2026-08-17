@@ -22,7 +22,7 @@ collection = client.get_collection(name="pharma_knowledge")
 groq_client = Groq(api_key=os.environ["GROQ_API_KEY"])
 
 
-def retrieve_context(question, n_results=5):
+def retrieve_context(question, n_results=8):
     # Pass query_texts instead of query_embeddings — Chroma handles the embedding
     # internally using its built-in model, so we don't need sentence-transformers at all
     # collection.query(...) = you're asking it a question, and what comes back is a dictionary, not just a plain list of matching texts

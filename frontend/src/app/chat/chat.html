@@ -6,8 +6,8 @@
       class="header-avatar"
     />
     <div class="header-info">
-      <span class="header-name">Arin's Assistant</span>
-      <span class="header-status">AI-powered · Ask me anything</span>
+      <span class="header-name">Paracetamol Clinical Assistant</span>
+      <span class="header-status">AI-powered · Grounded in EU/UK SmPCs</span>
     </div>
   </div>
 </div>
@@ -28,19 +28,7 @@
           <div class="message-wrapper bot-wrapper">
             <img [src]="botImageUrl" alt="Bot" class="avatar" />
             <div class="message bot">
-              <!-- show text if available -->
-              @if (msg.text) {
-                <span [innerHTML]="msg.text"></span>
-              }
-
-              <!-- show buttons if available -->
-              @if (msg.buttons) {
-                <div class="bot-buttons">
-                  @for (btn of msg.buttons; track btn) {
-                    <button (click)="sendMessageFromButton(btn)">{{ btn.label }}</button>
-                  }
-                </div>
-              }
+              <span [innerHTML]="renderMarkdown(msg.text)"></span>
             </div>
           </div>
         }

@@ -1,23 +1,18 @@
-//ng build --configuration production --output-path ../wwwroot
-//drag and drop the browser folder in netlify
-
 import { Component, ElementRef, ViewChild, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { HttpClientModule } from '@angular/common/http';
 import { ChatService, ChatMessage } from '../chat.service';
-import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
-
+import { DomSanitizer, SafeHtml, SafeUrl } from '@angular/platform-browser';
+import { marked } from 'marked';
 
 @Component({
   selector: 'app-chat',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [FormsModule],
   templateUrl: './chat.html',
   styleUrls: ['./chat.css']
 })
 export class ChatComponent {
-botImageUrl: SafeUrl;
+  botImageUrl: SafeUrl;
 
   constructor(private sanitizer: DomSanitizer) {
     this.botImageUrl = this.sanitizer.bypassSecurityTrustUrl(
@@ -38,8 +33,16 @@ botImageUrl: SafeUrl;
     this.userInput = '';
   }
 
-  sendMessageFromButton(btn: { label: string; value: string }) {
-    this.chatService.sendMessage(btn.value);
+  // Bot responses come back as markdown (the LLM formats with **bold**,
+  // bullet lists, etc). marked.parse() converts that markdown into an HTML
+  // string; bypassSecurityTrustHtml() tells Angular to trust and render it
+  // rather than escaping it as plain text. This is safe here because the
+  // content originates from our own backend, which only answers from a
+  // fixed, controlled set of source documents — not arbitrary user input
+  // being reflected back as HTML.
+  renderMarkdown(text: string): SafeHtml {
+    const html = marked.parse(text, { async: false }) as string;
+    return this.sanitizer.bypassSecurityTrustHtml(html);
   }
 
   private scrollToBottom(): void {
@@ -52,94 +55,3 @@ botImageUrl: SafeUrl;
     this.scrollToBottom();
   }
 }
-
-/* //ng build --configuration production --output-path ../wwwroot
-
-
-import { Component, ElementRef, inject, ViewChild } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
-import { HttpClient, HttpClientModule } from '@angular/common/http';
-
-interface ChatMessage {
-  text: string;
-  from: 'user' | 'bot';
-  buttons?: string[];
-}
-
-@Component({
-  selector: 'app-chat',
-  standalone: true,
-  imports: [CommonModule, FormsModule, HttpClientModule],
-  templateUrl: './chat.html',
-  styleUrls: ['./chat.css']
-})
-export class Chat {
-  messages: ChatMessage[] = [];
-  userInput: string = '';
-  apiUrl = window.location.hostname === 'localhost'
-  ? 'http://localhost:3000/chat'   // for dev
-  : 'https://arin-bot.onrender.com/chat'; // for Render/live site
-
-  @ViewChild('messagesWrapper') private messagesWrapper!: ElementRef<HTMLDivElement>;
-  private http = inject(HttpClient);
-
-  greetingText = "Hello! You are speaking with Arin Leviti's AI assistant. Arin is a freelance web developer with international experience who helps clients reduce production costs and streamline projects without relying on expensive agencies. Feel free to ask about his services, portfolio, or how he can help your business succeed!";
-  greetingButtons = ["Learn About Services", "View Portfolio", "Contact Arin"];
-
-  constructor() {
-    this.messages.push({ text: this.greetingText, from: 'bot', buttons: this.greetingButtons });
-  }
-
-  // Converts URLs in text to clickable links
-  linkify(text: string): string {
-    const urlPattern = /(\bhttps?:\/\/[^\s]+)/gi;
-    return text.replace(urlPattern, '<a href="$1" target="_blank">$1</a>');
-  }
-
-  sendMessageFromButton(buttonText: string) {
-    this.userInput = buttonText;
-    this.sendMessage();
-  }
-
-  sendMessage() {
-  if (!this.userInput.trim()) return;
-
-  // Add user message
-  this.messages.push({ text: this.userInput, from: 'user' });
-  const messageToSend = this.userInput;
-  this.userInput = '';
-
-  // Expect an array of bot messages from the backend
-  this.http.post<{ text: string; buttons: string[] }[]>(this.apiUrl, { message: messageToSend })
-    .subscribe({
-      next: (responses) => {
-        // If backend returns a single object instead of an array, wrap it
-        const botMessages = Array.isArray(responses) ? responses : [responses];
-
-        botMessages.forEach(r => {
-          this.messages.push({
-            text: this.linkify(r.text),
-            from: 'bot',
-            buttons: r.buttons.length > 0 ? r.buttons : undefined
-          });
-        });
-      },
-      error: (err) => {
-        console.error('API Error:', err);
-        this.messages.push({ text: 'Error contacting server.', from: 'bot' });
-      }
-    });
-}
-
-  private scrollToBottom(): void {
-    try {
-      this.messagesWrapper.nativeElement.scrollTop = this.messagesWrapper.nativeElement.scrollHeight;
-    } catch (err) {}
-  }
-
-  ngAfterViewChecked() {
-    this.scrollToBottom();
-  }
-}
- */

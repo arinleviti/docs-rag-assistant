@@ -4,7 +4,6 @@ import { HttpClient } from '@angular/common/http';
 export interface ChatMessage {
   text: string;
   from: 'user' | 'bot';
-  buttons?: { label: string; value: string }[];
 }
 
 @Injectable({
@@ -14,10 +13,9 @@ export class ChatService {
   private http = inject(HttpClient);
 
   private messages: ChatMessage[] = [];
-   isTyping = false;
-   isColdStart = false;
+  isTyping = false;
+  isColdStart = false;
   private typingTimeout?: ReturnType<typeof setTimeout>;
-   
 
   // Generate a random sessionId once when the service is created.
   // This persists for the lifetime of the browser tab — same idea as
@@ -27,19 +25,14 @@ export class ChatService {
   // pick API URL depending on env
   private apiUrl = window.location.hostname === 'localhost'
     ? 'http://localhost:8000/chat'
-    : 'https://arin-bot-py-224143145108.europe-west3.run.app/chat';
+    : 'https://docs-rag-assistant-backend-224143145108.europe-west3.run.app/chat';
 
   constructor() {
-  this.addMessage({
-    text: "Hi! I'm Arin's AI assistant — ask me anything about his skills, projects, or experience. I'm also a live demo of what Arin can build: a full RAG pipeline in Python, deployed on Google Cloud Run.",
-    from: 'bot',
-    buttons: [
-      { label: "How was this chatbot built?", value: "How was this chatbot built?" },
-      { label: "Tell me about his AI work", value: "Tell me about his AI work" },
-      { label: "Is he available for hire?", value: "Is he available for hire?" }
-    ]
-  });
-}
+    this.addMessage({
+      text: "Hi — I'm a clinical reference assistant for paracetamol (acetaminophen), grounded in official EU/UK regulatory documentation (SmPCs, a Public Assessment Report, and a drug-interactions reference). Ask me about dosing, contraindications, interactions, or special-population guidance. I'll only answer from the source documents and will tell you when something isn't covered, rather than guessing.",
+      from: 'bot'
+    });
+  }
 
   getMessages(): ChatMessage[] {
     return this.messages;
@@ -66,32 +59,28 @@ export class ChatService {
     this.isColdStart = false;
 
     this.typingTimeout = setTimeout(() => {
-    this.isColdStart = true;
-  }, 5000);
+      this.isColdStart = true;
+    }, 5000);
 
     // Include sessionId alongside message so the backend can track
     // conversation history per browser session
-    return this.http.post<{ text: string; buttons?: string[] }[]>(this.apiUrl, { 
+    return this.http.post<{ text: string }>(this.apiUrl, {
       message: userText,
       sessionId: this.sessionId
     })
       .subscribe({
-        next: (responses) => {
+        next: (response) => {
           clearTimeout(this.typingTimeout);
           this.isTyping = false;
           this.isColdStart = false;
-          const botMessages = Array.isArray(responses) ? responses : [responses];
 
-          botMessages.forEach(r => {
-            this.addMessage({
-              text: this.linkify(r.text),
-              from: 'bot',
-              buttons: r.buttons?.map(b => ({ label: b, value: b }))
-            });
+          this.addMessage({
+            text: this.linkify(response.text),
+            from: 'bot'
           });
         },
         error: (err) => {
-           clearTimeout(this.typingTimeout);
+          clearTimeout(this.typingTimeout);
           console.error('API Error:', err);
           this.isTyping = false;
           this.isColdStart = false;

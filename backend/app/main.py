@@ -1,12 +1,14 @@
 # --- DEV ---
+# venv\Scripts\Activate.ps1 if venv is not visible
 # uvicorn app.main:app --reload
 
-# --- DEPLOYMENT (run these in order from the backend/ root, once a container registry
-# and Cloud Run/App Service target are set up for this project) ---
-# 1. docker build -t docs-rag-assistant-backend .
-# 2. docker tag docs-rag-assistant-backend <registry-path>/docs-rag-assistant-backend:latest
-# 3. docker push <registry-path>/docs-rag-assistant-backend:latest
-# 4. <deploy command for your chosen platform — e.g. gcloud run deploy, az webapp, etc.>
+# --- DEPLOYMENT (run from the backend/ root; requires the gcloud CLI authenticated
+# and pointed at the target GCP project) ---
+# gcloud run deploy docs-rag-assistant-backend --source . --platform managed --region europe-west3 --allow-unauthenticated --max-instances 2 --set-env-vars GROQ_API_KEY=your_key_here
+#
+# This single command uploads the source, builds the container remotely via
+# Cloud Build (using the Dockerfile below), pushes it to Artifact Registry,
+# and deploys it to Cloud Run — no local Docker installation required.
 
 # --- KNOWLEDGE BASE UPDATE (run this locally after editing data/knowledge/*.md) ---
 # python app/rag/ingest.py
@@ -31,7 +33,7 @@ app = FastAPI()
 # Same role as app.use(cors()) in Express.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:4200", "https://REPLACE-WITH-DEPLOYED-FRONTEND-URL"],
+    allow_origins=["http://localhost:4200", "https://docs-rag-assistant-frontend-224143145108.europe-west3.run.app"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
