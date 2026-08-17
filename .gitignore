@@ -1,0 +1,12 @@
+# Python (backend)
+backend/venv/
+backend/.venv/
+backend/__pycache__/
+backend/*.pyc
+backend/.env
+backend/data/chroma_db/
+
+# Node (frontend)
+frontend/node_modules/
+frontend/.angular/
+frontend/dist/
