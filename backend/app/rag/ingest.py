@@ -14,13 +14,19 @@ chunks = []  # This will hold every chunk we create, across all files
 for file_path in KNOWLEDGE_DIR.glob("*.md"):
 
     # Read the file content with UTF-8 encoding, handling potential BOM
-    text = file_path.read_text(encoding="utf-8-sig")  
+    text = file_path.read_text(encoding="utf-8-sig")
 
     # Split the text into sections based on the Markdown header "##"
-    sections = text.split("##") 
-    # The first section is the title, remove leading and trailing whitespace.
-    # lstrip removes leading whitespace and the "#" character from the title, while strip() removes any remaining leading or trailing whitespace.
-    title = sections[0].lstrip("#").strip()  
+    sections = text.split("##")
+    # sections[0] is everything before the first "##" heading — in these knowledge
+    # base files that's the H1 title PLUS a metadata block (Source, Retrieved date,
+    # Document type, etc). We only want the H1 line itself as the "title" that gets
+    # prepended to every chunk — otherwise the entire metadata block gets duplicated
+    # into every single chunk from this file, wasting retrieval context budget on
+    # repeated boilerplate instead of actual content.
+    # split("\n")[0] takes just the first line (the H1); everything after it in
+    # sections[0] (the metadata block) is intentionally dropped here.
+    title = sections[0].lstrip("#").strip().split("\n")[0].strip()
     body_sections = sections[1:]  # The rest are body sections
 
     for section in body_sections:
@@ -46,12 +52,12 @@ chunk_texts = [chunk["text"] for chunk in chunks]
 # data/chroma_db already exists. No separate "create database" step needed —
 # unlike Postgres, there's no server running beforehand; this one line does both jobs.
 # Think of it like SQLite: pointing at a .db file that doesn't exist yet just creates it.
-client = chromadb.PersistentClient(path="data/chroma_db") 
+client = chromadb.PersistentClient(path="data/chroma_db")
 
 # get_or_create_collection is the equivalent of CREATE TABLE IF NOT EXISTS —
-# safe to run every time, won't duplicate or error if "arin_knowledge" already exists.
+# safe to run every time, won't duplicate or error if "pharma_knowledge" already exists.
 # A collection = a table: one database (chroma_db) can hold multiple collections.
-collection = client.get_or_create_collection(name="arin_knowledge")  
+collection = client.get_or_create_collection(name="pharma_knowledge")
 
 # Chroma's built-in embedding function handles converting text to vectors internally.
 # We pass query_texts instead of query_embeddings — no manual embedding step needed.
