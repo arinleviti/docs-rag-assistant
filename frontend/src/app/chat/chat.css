@@ -1,3 +1,10 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
 .chat-header {
   display: flex;
   align-items: center;
@@ -51,7 +58,8 @@
 }
 
 .messages-wrapper {
-  max-height: 340px;
+  flex: 1 1 0;
+  min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
   margin-bottom: 10px;
@@ -95,13 +103,65 @@
 }
 
 .bot {
-  max-width: 80%;
+  max-width: 92%;
   background: #f4f4f8;
   color: #1a1a2e;
   padding: 8px 12px;
   border-radius: 2px 12px 12px 12px;
   font-size: 13px;
   line-height: 1.5;
+}
+
+/* Markdown tables from bot responses (rendered via marked + innerHTML) need
+   explicit styling — without this, browsers render an unstyled, collapsed
+   table with no visible borders or spacing, which looks broken.
+   The scroll container is the table itself (not .bot) so the horizontal
+   scrollbar appears directly under the table — if it were on .bot instead,
+   the scrollbar would sit at the bottom of the whole message bubble, which
+   could be far below the table in a message with text before/after it. */
+.bot table {
+  display: block;
+  max-width: 100%;
+  min-width: max-content;
+  overflow-x: auto;
+  border-collapse: collapse;
+  margin: 8px 0;
+  font-size: 12px;
+}
+
+.bot th,
+.bot td {
+  border: 1px solid #ddd;
+  padding: 8px 10px;
+  text-align: left;
+  vertical-align: top;
+  line-height: 1.5;
+}
+
+/* Table cells sometimes contain multiple points (e.g. a list of warnings).
+   Style any nested lists so each item is visually separated instead of
+   running together as a dense block of dash-prefixed text. */
+.bot td ul,
+.bot td ol {
+  margin: 4px 0 0 0;
+  padding-left: 16px;
+}
+
+.bot td li {
+  margin-bottom: 4px;
+}
+
+.bot td li:last-child {
+  margin-bottom: 0;
+}
+
+.bot th {
+  background: #e8eaf5;
+  font-weight: 600;
+}
+
+.bot tr:nth-child(even) {
+  background: #fafafa;
 }
 
 .input-area {
@@ -142,26 +202,6 @@ button:hover {
   background: #5a6ee0;
 }
 
-.bot-buttons {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 6px;
-}
-
-.bot-buttons button {
-  font-size: 12px;
-  padding: 5px 10px;
-  background: white;
-  color: #6b7ff0;
-  border: 1px solid #6b7ff0;
-  border-radius: 6px;
-}
-
-.bot-buttons button:hover {
-  background: #6b7ff0;
-  color: white;
-}
 .typing-indicator {
   display: flex;
   align-items: center;
@@ -190,6 +230,7 @@ button:hover {
   color: #7a7f95;
   font-style: italic;
 }
+
 @media (max-width: 768px) {
   .avatar {
     display: none;

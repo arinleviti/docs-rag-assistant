@@ -1,8 +1,6 @@
 from app.schemas import Message
-#os is a built-in Python module that provides a way to interact with the operating system, including reading environment variables. In this case, it's used to access the GROQ_API_KEY from the environment.
 import os
 from typing import List
-# chromadb is a library for working with ChromaDB, which is a database purpose-built for storing these text-to-vector conversions and answering "find me the closest matches" queries efficiently. It's an open-source project
 import chromadb
 from dotenv import load_dotenv
 from groq import Groq
@@ -10,12 +8,7 @@ from groq import Groq
 load_dotenv()
 
 # --- Retrieval setup ---
-# PersistentClient connects to the existing database built by ingest.py, like PrismaClient connects to a Postgres database. It doesn't create a new database; it just connects to the one that already exists on disk.
-# PersistentClient — data is saved to actual files on disk, at whatever path you give it ("data/chroma_db" in your case), so it survives your program restarting.
-# So "persistent" describes durability across restarts
-# PersistentClient is the equivalent of PrismaClient in TypeScript, which connects to a database and allows you to query it. In this case, it's connecting to a ChromaDB database that was created by ingest.py.
 client = chromadb.PersistentClient(path="data/chroma_db")
-# inside the database I just connected to, give me the specific collection named pharma_knowledge
 collection = client.get_collection(name="pharma_knowledge")
 
 # --- Generation setup ---
@@ -23,10 +16,9 @@ groq_client = Groq(api_key=os.environ["GROQ_API_KEY"])
 
 
 def retrieve_context(question, n_results=8):
-    # Pass query_texts instead of query_embeddings — Chroma handles the embedding
-    # internally using its built-in model, so we don't need sentence-transformers at all
-    # collection.query(...) = you're asking it a question, and what comes back is a dictionary, not just a plain list of matching texts
-    # That dictionary bundles together several parallel pieces of information about the matches, keyed by name — "documents" (the actual matched text), and others like "metadatas"
+    # query_texts (not query_embeddings) — Chroma embeds the query internally
+    # using the same built-in embedding function ingest.py used to build the
+    # collection, so this has to stay consistent with ingest.py's approach.
     results = collection.query(
         query_texts=[question],
         n_results=n_results,
@@ -49,7 +41,6 @@ def format_context(chunks_with_metadata):
     return "\n\n---\n\n".join(formatted)
 
 
-# None makes the parameter optional. in TS we use ? to make a parameter optional, but in Python we use None as the default value. If the caller doesn't provide a value for history, it will be None.
 def answer_question(question: str, history: List[Message] = None) -> str:
 
     if history is None:
@@ -87,6 +78,11 @@ def answer_question(question: str, history: List[Message] = None) -> str:
         "you can use clinical terminology directly without simplifying it for a lay "
         "audience. Be precise and concise. Use the exact figures, thresholds, and terms "
         "given in the source documents rather than paraphrasing numbers loosely.\n\n"
+        "FORMATTING:\n"
+        "When a table cell needs to hold more than one point, use a proper HTML list "
+        "(<ul><li>...</li></ul>) inside that cell rather than separating items with dashes "
+        "and line breaks — markdown tables render each cell's content as a single line, so "
+        "plain dash-separated text collapses into a hard-to-read block.\n\n"
         "DISCLAIMER:\n"
         "This tool supplements, but does not replace, direct consultation of the full "
         "SmPC, the BNF, or other authoritative clinical references, and does not replace "
@@ -94,21 +90,9 @@ def answer_question(question: str, history: List[Message] = None) -> str:
         f"Context:\n{context_text}"
     )
 
-    # Create the system message as a Message instance — Pydantic validates it on creation
     system_message = Message(role="system", content=system_prompt)
-
-    # Start the messages list with the system prompt.
-    # .model_dump() converts the Message instance into a plain object that Groq understands
     messages = [system_message.model_dump()]
-
-    # Add all previous conversation turns to the messages list.
-    # .model_dump() converts each Message instance into a plain object for Groq.
-    # extend() adds each item individually, oldest message first
     messages.extend([m.model_dump() for m in history])
-
-    # Finally, append the brand new question from the user as the last item.
-    # This is a plain object directly — no Message instance needed here since
-    # it's the current turn, not something we're storing or validating elsewhere.
     messages.append({"role": "user", "content": question})
 
     response = groq_client.chat.completions.create(

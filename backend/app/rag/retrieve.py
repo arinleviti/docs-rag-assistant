@@ -25,8 +25,8 @@ results = collection.query(
     n_results=5,
 )
 
-documents = results["documents"][0]  # Get the documents from the results
-metadatas = results["metadatas"][0]  # Get the metadata from the results
+documents = results["documents"][0]
+metadatas = results["metadatas"][0]
 
 for doc, metadata in zip(documents, metadatas):
     print(f"--- from {metadata['source']} ({metadata['heading']}) ---")
