@@ -157,6 +157,7 @@ Rather than assume the prompt worked, I tested it against three specific scenari
 
 ## Key technical decisions and why
 
+- **Angular** for the frontend, rather than **React** or another framework. I had a working Angular chat frontend from an earlier personal project, with session handling, a typing indicator, and markdown-aware message rendering already solved. Reusing and adapting it let me put my limited time into the parts of this assignment that are actually graded — RAG quality, guardrails, retrieval tuning — rather than rebuilding a chat UI from scratch in a different framework. Angular is also TypeScript-first by design, which is a reasonable answer in its own right to a role described as TypeScript/web-engineering focused; the framework choice isn't a mismatch, it's a time-budget decision.
 - **Monorepo structure** (`backend/` and `frontend/` in one repository) rather than two separate repos, matching the assignment's framing as a single fullstack deliverable and simplifying setup and review.
 - **In-memory session storage** rather than a database. Appropriate for this assignment's scope; it would not survive a server restart, which is an explicit, acceptable trade-off here rather than an oversight (see Known limitations).
 
